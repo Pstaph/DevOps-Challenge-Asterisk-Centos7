@@ -1,0 +1,52 @@
+#Sources:
+# Used to figure out certain commands to use in Centos https://computingpost.medium.com/how-to-install-asterisk-16-pbx-on-centos-7-43be1f7bcedc
+#The main Guide: https://linuxize.com/post/how-to-install-asterisk-on-ubuntu-20-04/
+#Chat gpt to convert certain commands from Ubuntu to Centos
+
+
+
+sudo sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo
+sudo sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo
+sudo sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo
+sudo -- bash -c 'echo "sslverify=false" >> /etc/yum.conf'
+
+sudo yum -y update
+
+sudo yum -y install wget build-essential git autoconf subversion pkg-config libtool
+cd /usr/src/
+sudo git clone https://github.com/asterisk/asterisk asterisk-22
+cd asterisk-22
+sudo contrib/scripts/get_mp3_source.sh
+sudo contrib/scripts/install_prereq install
+sudo ./configure --with-jansson-bundle
+
+#sudo make menuselect
+
+sudo make
+sudo make install
+sudo make samples
+sudo make basic-pbx
+sudo make config
+sudo ldconfig
+
+
+#making the user
+sudo useradd -r -M -d /var/lib/asterisk -c "Asterisk PBX" asterisk
+sudo vi /etc/sysconfig/asterisk
+
+
+#Uncomment this
+AST_USER="asterisk"
+AST_GROUP="asterisk"
+
+sudo usermod -a -G dialout,audio asterisk
+
+sudo chown -R asterisk: /var/{lib,log,run,spool}/asterisk /usr/lib/asterisk /etc/asterisk
+sudo chmod -R 750 /var/{lib,log,run,spool}/asterisk /usr/lib/asterisk /etc/asterisk
+
+sudo systemctl start asterisk
+
+#sudo asterisk -vvvr
+
+sudo systemctl enable asterisk
+
